@@ -1,0 +1,43 @@
+{
+  "name": "brand-syndicate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@prisma/client": "^5.22.0",
+    "@sparticuz/chromium": "^130.0.0",
+    "cloudinary": "^2.5.1",
+    "next": "14.2.18",
+    "next-auth": "^5.0.0-beta.25",
+    "pptxgenjs": "^3.12.0",
+    "prisma": "^5.22.0",
+    "puppeteer-core": "^23.9.0",
+    "qrcode": "^1.5.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "resend": "^4.0.1",
+    "sharp": "^0.33.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5",
+    "bcryptjs": "^2.4.3",
+    "razorpay": "^2.9.2",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/bcryptjs": "^2.4.6"
+  },
+  "devDependencies": {},
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

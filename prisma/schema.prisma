@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ExportFormat {
+  PDF
+  PPTX
+  HTML
+  VCARD
+  QR
+}
+
+enum GenStatus {
+  PENDING
+  COMPLETE
+  FAILED
+  FLAGGED
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  password      String?
+  name          String?
+  username      String?      @unique
+  image         String?
+  role          Role         @default(USER)
+  plan          Plan         @default(FREE)
+  jobTitle      String?
+  company       String?
+  location      String?
+  website       String?
+  linkedin      String?
+  bio           String?
+  accentColor   String?      @default("#C9A84C")
+  usageCount    Int          @default(0)
+  usageResetAt  DateTime     @default(now())
+  razorpayId    String?      @unique
+  razorpaySubId String?
+  onboarded     Boolean      @default(false)
+  referralCode  String?      @unique
+  referredBy    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  generations   Generation[]
+  exports       Export[]
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  tier        String
+  description String?
+  accentColor String   @default("#C9A84C")
+  preview     String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  generations Generation[]
+}
+
+model Generation {
+  id           String    @id @default(cuid())
+  userId       String
+  templateId   String
+  status       GenStatus @default(PENDING)
+  inputData    Json
+  enrichedData Json?
+  outputData   Json?
+  tokenCount   Int?
+  flagReason   String?
+  version      Int       @default(1)
+  parentId     String?
+  createdAt    DateTime  @default(now())
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template     Template  @relation(fields: [templateId], references: [id])
+  exports      Export[]
+}
+
+model Export {
+  id           String       @id @default(cuid())
+  userId       String
+  generationId String
+  format       ExportFormat
+  cloudinaryId String?
+  url          String?
+  expiresAt    DateTime?
+  downloadCount Int         @default(0)
+  createdAt    DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation   Generation   @relation(fields: [generationId], references: [id], onDelete: Cascade)
+}

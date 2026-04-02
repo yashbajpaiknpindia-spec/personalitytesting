@@ -1,0 +1,44 @@
+import { db } from '@/lib/db'
+import { Plan } from '@prisma/client'
+
+const ipStore = new Map<string, { count: number; resetAt: number }>()
+
+export function checkIpLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = ipStore.get(ip)
+  if (!entry || now > entry.resetAt) {
+    ipStore.set(ip, { count: 1, resetAt: now + 3600000 })
+    return true
+  }
+  if (entry.count >= 10) return false
+  entry.count++
+  return true
+}
+
+export async function checkUserConcurrency(userId: string): Promise<boolean> {
+  const pending = await db.generation.count({
+    where: { userId, status: 'PENDING' },
+  })
+  return pending < 5
+}
+
+export async function checkMonthlyUsage(userId: string, plan: Plan): Promise<boolean> {
+  if (plan === 'PRO' || plan === 'TEAM') return true
+  const user = await db.user.findUnique({ where: { id: userId } })
+  if (!user) return false
+
+  // If the last reset was before the start of the current month, reset now
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  if (user.usageResetAt < startOfMonth) {
+    await db.user.update({
+      where: { id: userId },
+      data: { usageCount: 0, usageResetAt: new Date() },
+    })
+    return true // just reset → 0 uses this month
+  }
+
+  return user.usageCount < 3
+}
