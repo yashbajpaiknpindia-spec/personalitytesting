@@ -1,0 +1,38 @@
+# The Brand Syndicate — robots.txt
+# https://www.brandsyndicate.in
+
+User-agent: *
+Allow: /
+
+# Allow Google AdSense crawler
+User-agent: Mediapartners-Google
+Allow: /
+
+# Allow social crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# Block private app routes
+Disallow: /api/
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /generate
+Disallow: /settings
+Disallow: /billing
+Disallow: /analytics
+Disallow: /referrals
+Disallow: /my-work
+Disallow: /card/edit
+Disallow: /resume/edit
+Disallow: /portfolio
+Disallow: /presentations
+Disallow: /(auth)/
+
+# Sitemap location
+Sitemap: https://www.brandsyndicate.in/sitemap.xml
