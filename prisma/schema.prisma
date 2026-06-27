@@ -1,0 +1,776 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ─────────────────────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ExportFormat {
+  PDF
+  PPTX
+  HTML
+  VCARD
+  QR
+}
+
+enum GenStatus {
+  PENDING
+  COMPLETE
+  FAILED
+  FLAGGED
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  FACEBOOK
+  LINKEDIN
+  YOUTUBE
+}
+
+enum SocialAccountStatus {
+  CONNECTED
+  EXPIRED
+  FAILED
+}
+
+enum SocialMediaType {
+  IMAGE
+  VIDEO
+  REEL
+  CAROUSEL
+}
+
+enum SocialAssetSource {
+  GENERATED
+  MANUAL_UPLOAD
+  CLOUDINARY_URL
+}
+
+enum SocialPostStatus {
+  DRAFT
+  APPROVED
+  SCHEDULED
+  POSTING
+  POSTED
+  FAILED
+  CANCELLED
+}
+
+
+// Phase 1: analytics event types
+enum EventType {
+  PORTFOLIO_VIEW
+  CARD_VIEW
+  RESUME_DOWNLOAD
+  PRESENTATION_VIEW
+  LEAD_CAPTURED
+}
+
+// ── Core models (original, unchanged) ────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  phone         String?  @unique
+  password      String?
+  name          String?
+  username      String?  @unique
+  image         String?
+  role          Role     @default(USER)
+  plan          Plan     @default(FREE)
+  jobTitle      String?
+  company       String?
+  location      String?
+  website       String?
+  linkedin      String?
+  bio           String?
+  accentColor   String?  @default("#C9A84C")
+  usageCount    Int      @default(0)
+  usageResetAt  DateTime @default(now())
+  // Daily usage tracking (separate from monthly usageCount)
+  dailyUsageCount Int    @default(0)
+  dailyUsageDate  String @default("")  // ISO date string "YYYY-MM-DD" of current window
+  // Admin-controlled generation limits (null = use plan default)
+  dailyGenLimit   Int?
+  monthlyGenLimit Int?
+  yearlyGenLimit  Int?
+  isSuspended   Boolean  @default(false)
+  suspendReason String?
+  razorpayId    String?  @unique
+  razorpaySubId String?
+  onboarded     Boolean  @default(false)
+  referralCode  String?  @unique
+  referredBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  generations     Generation[]
+  exports         Export[]
+  portfolio        Portfolio?
+  contacts         Contact[]
+  cardViews        CardView[]
+  analyticsEvents  AnalyticsEvent[]
+  socialLinks      SocialLinks?
+  domain           Domain?
+  resumeVersions   ResumeVersion[]
+  presentations    Presentation[]
+  projects         Project[]
+  seoSettings      SeoSettings?
+  blogPosts        BlogPost[]
+  apiCallLogs      ApiCallLog[]
+  pageVisits       PageVisit[]
+  userWebsites     UserWebsite[]
+  chatThreads      ChatThread[]
+  chatMessages     ChatMessage[]
+  socialAccounts      SocialAccount[]
+  socialMediaAssets   SocialMediaAsset[]
+  scheduledSocialPosts ScheduledSocialPost[]
+}
+
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  tier        String
+  description String?
+  accentColor String   @default("#C9A84C")
+  preview     String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  generations Generation[]
+}
+
+model Generation {
+  id             String    @id @default(cuid())
+  userId         String
+  templateId     String?
+  status         GenStatus @default(PENDING)
+  inputData      Json
+  enrichedData   Json?
+  outputData     Json?
+  tokenCount     Int?
+  inputTokens    Int?
+  outputTokens   Int?
+  modelUsed      String?
+  costUsd        Float?
+  flagReason     String?
+  version        Int       @default(1)
+  parentId       String?
+  createdAt      DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  Template?  @relation(fields: [templateId], references: [id])
+  exports   Export[]
+  portfolio Portfolio?
+  socialMediaAssets SocialMediaAsset[]
+  scheduledSocialPosts ScheduledSocialPost[]
+}
+
+model Export {
+  id            String       @id @default(cuid())
+  userId        String
+  generationId  String
+  format        ExportFormat
+  cloudinaryId  String?
+  url           String?
+  expiresAt     DateTime?
+  downloadCount Int          @default(0)
+  createdAt     DateTime     @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+}
+
+// ── Phase 1: Portfolio Publishing ─────────────────────────────────────────
+
+model Portfolio {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  generationId   String   @unique
+  slug                String   @unique
+  isPublished         Boolean  @default(true)
+  customDomain        String?
+  websiteTheme        String?  @default("the-manifesto")
+  seoTitle            String?
+  seoDescription      String?
+  ogImageUrl          String?
+  googleAnalyticsId   String?  // e.g. G-XXXXXXXXXX
+  gscVerificationToken String? // Google Search Console meta tag content
+  viewCount           Int      @default(0)
+  publishedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+
+  @@map("portfolios")
+}
+
+// ── Phase 1: Lead Capture ─────────────────────────────────────────────────
+
+model Contact {
+  id         String   @id @default(cuid())
+  ownerId    String
+  name       String
+  email      String
+  phone      String?
+  company    String?
+  sourceSlug String?
+  createdAt  DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model CardView {
+  id        String   @id @default(cuid())
+  ownerId   String
+  visitorIp String?
+  userAgent String?
+  referer   String?
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+// ── Phase 1: Analytics ────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id        String    @id @default(cuid())
+  ownerId   String
+  type      EventType
+  metadata  Json?
+  visitorIp String?
+  userAgent String?
+  referer   String?
+  createdAt DateTime  @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@map("analytics_events")
+}
+
+// ── Phase 2: Social Links ─────────────────────────────────────────────────
+
+model SocialLinks {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  linkedin  String?
+  whatsapp  String?
+  instagram String?
+  website   String?
+  portfolio String?
+  twitter   String?
+  github    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Phase 2: Custom Domain ────────────────────────────────────────────────
+
+model Domain {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  domain            String   @unique
+  verified          Boolean  @default(false)
+  verificationToken String
+  cnameTarget       String   @default("cname.brandsyndicate.co")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Phase 5: Living Portfolio ──────────────────────────────────────────────
+
+model Project {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  url         String?
+  imageUrl    String?
+  tags        String[]  @default([])
+  featured    Boolean   @default(false)
+  order       Int       @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, featured])
+  @@index([userId, order])
+  @@map("projects")
+}
+
+model SeoSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  pageTitle       String?
+  metaDescription String?
+  ogImageUrl      String?
+  twitterHandle   String?
+  canonicalUrl    String?
+  noIndex         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("seo_settings")
+}
+
+model BlogPost {
+  id             String    @id @default(cuid())
+  userId         String
+  title          String
+  slug           String
+  excerpt        String?
+  content        String    @default("")
+  coverImageUrl  String?
+  tags           String[]  @default([])
+  published      Boolean   @default(false)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  readingMinutes Int?      @default(1)
+  viewCount      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([userId, published])
+  @@index([publishedAt(sort: Desc)])
+  @@map("blog_posts")
+}
+
+// ── Phase 4: Editable Slide Builder ───────────────────────────────────────
+
+model Presentation {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String   @default("Untitled Presentation")
+  slug        String   @unique
+  accentColor String   @default("#C9A84C")
+  meta        Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slides Slide[]
+
+  @@index([userId])
+  @@map("presentations")
+}
+
+model Slide {
+  id             String   @id @default(cuid())
+  presentationId String
+  order          Int      @default(0)
+  content        Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  presentation Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+
+  @@index([presentationId])
+  @@index([presentationId, order])
+  @@map("slides")
+}
+
+// ── Phase 3: Resume Intelligence ──────────────────────────────────────────
+
+model ResumeVersion {
+  id             String   @id @default(cuid())
+  userId         String
+  originalResume Json
+  tailoredResume Json?
+  jobDescription String?
+  coverLetter    String?
+  atsScore       Int?
+  atsBreakdown   Json?
+  atsSuggestions Json?
+  tone           String?  @default("professional")
+  label          String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ── Admin: API Usage Tracking ──────────────────────────────────────────────
+
+model ApiCallLog {
+  id          String   @id @default(cuid())
+  service     String   // 'claude' | 'openai' | 'pexels' | 'pexels-website'
+  userId      String?
+  endpoint    String?
+  // Claude-specific
+  model       String?
+  inputTokens  Int?
+  outputTokens Int?
+  totalTokens  Int?
+  costUsd      Float?
+  costInr      Float?
+  // Pexels-specific
+  query       String?
+  success     Boolean  @default(true)
+  cached      Boolean  @default(false)
+  generationId String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([service])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([service, createdAt])
+  @@map("api_call_logs")
+}
+
+model AdminSettings {
+  id        String   @id @default("singleton")
+  usdToInr  Float    @default(84.0)
+  updatedAt DateTime @updatedAt
+
+  // ── MASTER generation limit — applied to ALL users, ALL generation types ──
+  // Admin sets one number + one period; both are shown to users on the generate page.
+  globalGenLimit    Int    @default(5)        // e.g. 5 generations per period
+  globalLimitPeriod String @default("daily")  // "daily" | "monthly"
+
+  // ── Per-plan fine-grained limits (used for per-plan overrides; secondary to globalGenLimit) ──
+  // FREE plan
+  freeDailyLimit    Int? @default(3)
+  freeWeeklyLimit   Int?
+  freeMonthlyLimit  Int? @default(30)
+
+  // PRO plan
+  proDailyLimit     Int?
+  proWeeklyLimit    Int?
+  proMonthlyLimit   Int?
+
+  // TEAM plan
+  teamDailyLimit    Int?
+  teamWeeklyLimit   Int?
+  teamMonthlyLimit  Int?
+
+  // ── Poster / image edit limits ─────────────────────────────────────────────
+  posterEditLimit   Int @default(2)   // max AI edits per generated poster/image
+
+  @@map("admin_settings")
+}
+
+// ── Phase 7: Push Notifications ───────────────────────────────────────────
+
+model Notification {
+  id            String   @id @default(cuid())
+  title         String
+  body          String
+  imageUrl      String?
+  type          String   @default("broadcast") // 'broadcast' | 'targeted'
+  targetUserId  String?
+  sentBy        String
+  createdAt     DateTime @default(now())
+
+  reads NotificationRead[]
+
+  @@map("notifications")
+}
+
+model NotificationRead {
+  id             String   @id @default(cuid())
+  notificationId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+  @@map("notification_reads")
+}
+
+// ── Phase 7: Page Visit Analytics ─────────────────────────────────────────
+
+model PageVisit {
+  id         String   @id @default(cuid())
+  userId     String?
+  page       String
+  durationMs Int?
+  sessionId  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([page])
+  @@index([createdAt])
+  @@map("page_visits")
+}
+
+// ── Phase 7: Pricing Plan Config ──────────────────────────────────────────
+
+model PricingPlan {
+  id        String   @id @default(cuid())
+  planId    String   @unique // 'FREE' | 'PRO' | 'TEAM'
+  name      String
+  price     String
+  period    String   @default("/month")
+  features  String   // JSON array stored as string
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  highlight Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("pricing_plans")
+}
+
+// ── Phase 8: User Websites ─────────────────────────────────────────────────
+
+model UserWebsite {
+  id             String   @id @default(cuid())
+  userId         String
+  name           String                          // company / site name
+  templateId     String?                         // sample id e.g. "bakery"
+  templateLabel  String?                         // human label e.g. "Artisan Bakery"
+  htmlContent    String   @db.Text               // full HTML (edited or generated)
+  isGenerated    Boolean  @default(false)        // true = AI-generated, false = sample
+  isPublished    Boolean  @default(false)
+  slug           String?  @unique                // public URL slug
+  customDomain   String?  @unique                // e.g. mybusiness.com
+  domainVerified Boolean  @default(false)
+  adminNote      String?  @db.Text               // admin can annotate
+  prompt         String?  @db.Text               // original user prompt / brief used to create this website
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([slug])
+  @@index([createdAt])
+  @@map("user_websites")
+}
+
+
+// ── Brand Chat: user-visible AI conversation history + cost tracking ───────
+
+model ChatThread {
+  id            String        @id @default(cuid())
+  userId        String
+  title         String        @default("New chat")
+  mode          String        @default("brand_studio") // brand_studio | website | strategy | support
+  totalCostUsd  Float         @default(0)
+  totalCostInr  Float         @default(0)
+  messageCount  Int           @default(0)
+  lastMessageAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+
+  @@index([userId])
+  @@index([lastMessageAt])
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id              String   @id @default(cuid())
+  threadId        String
+  userId          String?
+  role            String   // user | assistant | system
+  content         String   @db.Text
+  provider        String?  // local | claude | openai
+  model           String?
+  inputTokens     Int?
+  outputTokens    Int?
+  totalTokens     Int?
+  costUsd         Float?
+  costInr         Float?
+  usedExternalApi Boolean  @default(false)
+  confidence      Float?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([threadId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+// ── Social Media Automation ───────────────────────────────────────────────
+
+model SocialAccount {
+  id                    String              @id @default(cuid())
+  userId                String
+  platform              SocialPlatform
+  accountName           String
+  accountId             String
+  accessTokenEncrypted  String?             @db.Text
+  refreshTokenEncrypted String?             @db.Text
+  expiresAt             DateTime?
+  status                SocialAccountStatus @default(CONNECTED)
+  followerCount         Int                 @default(0)
+  profileViews          Int                 @default(0)
+  metadata              Json?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts     ScheduledSocialPost[]
+  growth    SocialGrowthSnapshot[]
+
+  @@unique([userId, platform, accountId])
+  @@index([userId])
+  @@index([platform])
+  @@map("social_accounts")
+}
+
+model SocialMediaAsset {
+  id                 String            @id @default(cuid())
+  userId             String
+  source             SocialAssetSource
+  generationId        String?
+  title              String
+  mediaUrl            String           @db.Text
+  thumbnailUrl        String?          @db.Text
+  mediaType           SocialMediaType  @default(IMAGE)
+  platformHint        SocialPlatform?
+  metadata            Json?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generation Generation? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  posts      ScheduledSocialPost[]
+
+  @@index([userId])
+  @@index([source])
+  @@index([generationId])
+  @@map("social_media_assets")
+}
+
+model ScheduledSocialPost {
+  id              String           @id @default(cuid())
+  userId          String
+  socialAccountId String
+  assetId         String?
+  generationId    String?
+  platform        SocialPlatform
+  source          SocialAssetSource
+  mediaUrl        String           @db.Text
+  mediaType       SocialMediaType  @default(IMAGE)
+  caption         String           @db.Text
+  hashtags        String[]         @default([])
+  scheduledAt     DateTime
+  status          SocialPostStatus @default(DRAFT)
+  errorMessage    String?          @db.Text
+  postedUrl       String?          @db.Text
+  externalPostId  String?
+  rawResponse     Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialAccount SocialAccount     @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  asset         SocialMediaAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  generation    Generation?       @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  metrics       SocialPostMetric[]
+  logs          SocialPostLog[]
+
+  @@index([userId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([platform])
+  @@map("scheduled_social_posts")
+}
+
+model SocialPostMetric {
+  id              String         @id @default(cuid())
+  scheduledPostId String
+  platform        SocialPlatform
+  views           Int            @default(0)
+  impressions     Int            @default(0)
+  reach           Int            @default(0)
+  likes           Int            @default(0)
+  comments        Int            @default(0)
+  shares          Int            @default(0)
+  saves           Int            @default(0)
+  clicks          Int            @default(0)
+  engagementRate  Float          @default(0)
+  collectedAt     DateTime       @default(now())
+
+  scheduledPost ScheduledSocialPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPostId])
+  @@index([platform])
+  @@index([collectedAt])
+  @@map("social_post_metrics")
+}
+
+model SocialGrowthSnapshot {
+  id                String         @id @default(cuid())
+  socialAccountId   String
+  platform          SocialPlatform
+  followers         Int            @default(0)
+  profileViews      Int            @default(0)
+  totalViews        Int            @default(0)
+  totalEngagements  Int            @default(0)
+  collectedAt       DateTime       @default(now())
+
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  @@index([socialAccountId])
+  @@index([platform])
+  @@index([collectedAt])
+  @@map("social_growth_snapshots")
+}
+
+model SocialPostLog {
+  id              String   @id @default(cuid())
+  scheduledPostId String
+  platform        String
+  action          String
+  status          String
+  response        Json?
+  error           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  scheduledPost ScheduledSocialPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledPostId])
+  @@index([createdAt])
+  @@map("social_post_logs")
+}
+

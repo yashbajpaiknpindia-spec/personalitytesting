@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-06-21T11:58:13.903898+00:00",
+  "total_templates": 1000,
+  "total_img_tags": 5661,
+  "zero_image_tags": 0,
+  "one_or_no_images": 0,
+  "empty_or_missing_img_src_files": 0,
+  "missing_hero_media": 0,
+  "unique_body_variant_signatures": 1000,
+  "scan_counts": {
+    "visible_template_word": 0,
+    "visible_preview_word": 0,
+    "generator_backend_language": 0,
+    "free_or_paid_placeholder_language": 0,
+    "internal_copy_language": 0,
+    "generic_service_one_six": 0,
+    "placeholder_lorem": 0
+  },
+  "scan_examples": {
+    "visible_template_word": [],
+    "visible_preview_word": [],
+    "generator_backend_language": [],
+    "free_or_paid_placeholder_language": [],
+    "internal_copy_language": [],
+    "generic_service_one_six": [],
+    "placeholder_lorem": []
+  },
+  "duplicate_visual_families_after_unique_variants": 0,
+  "templates_in_duplicate_visual_families_after_unique_variants": 0,
+  "largest_duplicate_visual_families_after_unique_variants": []
+}

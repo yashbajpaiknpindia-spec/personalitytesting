@@ -1,0 +1,20 @@
+{
+  "task": "Add separate 808 templates to existing app, keep existing files intact except requested template changes",
+  "final_template_count": 1000,
+  "existing_samples_kept": 192,
+  "existing_unregistered_samples_registered": 150,
+  "new_separate_templates_added": 808,
+  "final_html_sample_files": 1000,
+  "missing_html_files": 0,
+  "unregistered_html_files": 0,
+  "duplicate_template_ids": 0,
+  "template_page_thumbnail_entries": 1000,
+  "responsive_guard_added_to_sample_html_files": 1000,
+  "generateTemplatePlan_candidate_limit": 100,
+  "files_changed_intentionally": [
+    "public/samples/*.html",
+    "src/lib/website/templates.ts",
+    "src/lib/website/generateTemplatePlan.ts",
+    "src/app/(app)/templates/TemplatesClient.tsx"
+  ]
+}

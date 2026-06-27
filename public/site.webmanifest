@@ -1,0 +1,23 @@
+{
+  "name": "Brand Syndicate",
+  "short_name": "Brand Syndicate",
+  "description": "AI Powered Business Branding Studio. Launch websites, logos, graphics, reels, and marketing strategy for your business in minutes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "screenshots": [
+    { "src": "/og-default.png", "sizes": "1200x630", "type": "image/png", "form_factor": "wide" }
+  ],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/"
+}

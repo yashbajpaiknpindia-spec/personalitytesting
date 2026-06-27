@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-06-21T11:34:24.746Z",
+  "sampleTemplatesChecked": 1000,
+  "publicRouteUsesResponsiveFix": true,
+  "publicRouteUsesImageFallback": true,
+  "previewRouteUsesImageFallback": true,
+  "newGeneratedRendererUsesImageFallback": true,
+  "smokeHtmlFilesGenerated": [
+    "public/generated/website-mobile-smoke/bsx-premium-furniture-atelier-atelier-mobile-smoke.html",
+    "public/generated/website-mobile-smoke/bsx-farm-to-table-restaurant-atelier-mobile-smoke.html",
+    "public/generated/website-mobile-smoke/bsx-heritage-hotel-palace-atelier-mobile-smoke.html",
+    "public/generated/website-mobile-smoke/bsx-rera-real-estate-advisory-atelier-mobile-smoke.html",
+    "public/generated/website-mobile-smoke/bsx-modular-kitchen-studio-atelier-mobile-smoke.html",
+    "public/generated/website-mobile-smoke/ayurvedic-clinic-mobile-smoke.html"
+  ],
+  "issueCounts": {
+    "malformedImageSlash": 0,
+    "unsafe100vw": 0,
+    "missingViewport": 0,
+    "publicRouteMissingResponsiveInjection": 0,
+    "publicRouteMissingImageFallback": 0,
+    "previewRouteMissingImageFallback": 0,
+    "rendererMissingImageFallback": 0
+  },
+  "remainingIssueSamples": {
+    "malformedImageSlash": [],
+    "unsafe100vw": [],
+    "missingViewport": []
+  }
+}
